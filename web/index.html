@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Insta Vault</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body data-card="s" data-view="references">
+  <nav class="menubar" id="menubar">
+    <div class="menu" data-menu="vault">
+      <button class="menu-btn">Vault</button>
+      <div class="dropdown">
+        <button data-act="refresh">Refresh<span class="hint">F5</span></button>
+        <button data-act="reveal-vault">Open media folder</button>
+        <div class="sep"></div>
+        <button data-act="rescan">Rescan media folder…</button>
+        <button data-act="export">Export all data (JSON)</button>
+        <button data-act="import">Import data (JSON)…</button>
+      </div>
+    </div>
+    <div class="menu" data-menu="view">
+      <button class="menu-btn">View</button>
+      <div class="dropdown">
+        <button data-act="card" data-val="s"><span class="tick">•</span>Small cards</button>
+        <button data-act="card" data-val="m"><span class="tick">•</span>Medium cards</button>
+        <button data-act="card" data-val="l"><span class="tick">•</span>Large cards</button>
+        <div class="sep"></div>
+        <button data-act="sort" data-val="saved_desc"><span class="tick">•</span>Newest saved</button>
+        <button data-act="sort" data-val="saved_asc"><span class="tick">•</span>Oldest saved</button>
+        <button data-act="sort" data-val="taken_desc"><span class="tick">•</span>Newest posted</button>
+        <button data-act="sort" data-val="taken_asc"><span class="tick">•</span>Oldest posted</button>
+      </div>
+    </div>
+    <div class="menu" data-menu="settings">
+      <button class="menu-btn">Settings</button>
+      <div class="dropdown">
+        <button data-act="settings">Preferences…</button>
+        <div class="sep"></div>
+        <button data-act="select-all">Select all</button>
+        <button data-act="clear-sel">Clear selection</button>
+      </div>
+    </div>
+    <span class="mb-stats" id="stats"></span>
+  </nav>
+
+  <div class="tabs">
+    <button class="tab on" data-view="references">References</button>
+    <button class="tab" data-view="library">Library</button>
+    <button class="tab" data-view="scenarios">Scenarios</button>
+    <button class="tab" data-view="editor">Editor</button>
+    <span class="tab-note" id="tabNote"></span>
+  </div>
+
+  <!-- ============================ references ============================ -->
+  <div id="referencesView" class="view">
+    <section class="composer" id="composer">
+      <textarea id="links" rows="1"
+        placeholder="Paste Instagram post / reel links — one per line"></textarea>
+      <label class="check"><input type="checkbox" id="skipExisting" checked /> skip saved</label>
+      <button id="saveBtn" class="primary">Save</button>
+    </section>
+
+    <section class="queue hidden" id="queue">
+      <div class="queue-head">
+        <span id="queueTitle">Downloading…</span>
+        <span class="timer" id="queueTimer">0:00</span>
+        <button class="ghost" id="queueClose" hidden>Close</button>
+      </div>
+      <div id="queueItems"></div>
+    </section>
+
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="Search caption, author, hashtag, note…" />
+      <div class="bulk hidden" id="bulk">
+        <span id="selCount">0 selected</span>
+        <input id="bulkTag" type="text" placeholder="add tag…" />
+        <button class="ghost" id="bulkApply">Tag</button>
+        <button class="danger" id="bulkDelete">Delete</button>
+        <button class="ghost" id="bulkClear">✕</button>
+      </div>
+    </div>
+
+    <div class="ref-page">
+      <aside class="facets" id="facets"></aside>
+      <div class="ref-main">
+        <main id="grid" class="grid"></main>
+        <div id="empty" class="empty hidden">
+          <p>Nothing saved yet.</p>
+          <span>Paste an Instagram link above to start your archive.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================= library ============================== -->
+  <div id="libraryView" class="view hidden">
+    <div class="toolbar">
+      <div class="src-tabs">
+        <button class="src on" data-shelf="faces">Faces</button>
+        <button class="src" data-shelf="characters">Characters</button>
+      </div>
+      <div class="chips" id="libShelfFilter"></div>
+      <span class="tab-note" id="libShelfCount"></span>
+      <div class="spacer"></div>
+    </div>
+    <div class="lib-page">
+      <main id="shelfGrid" class="grid"></main>
+      <aside class="shelf-side" id="shelfSide"></aside>
+    </div>
+  </div>
+
+  <!-- ============================ scenarios ============================= -->
+  <div id="scenariosView" class="view hidden">
+    <main id="scenList" class="scen-page"></main>
+  </div>
+
+  <!-- ============================== editor ============================== -->
+  <div id="editorView" class="view hidden">
+    <div class="ed-top" id="edTop">
+      <!-- library -->
+      <section class="pane" id="edLib">
+        <div class="pane-head">
+          <div class="src-tabs">
+            <button class="src on" data-src="vault">Vault</button>
+            <button class="src" data-src="audio">Audio</button>
+            <button class="src" data-src="local">Local</button>
+          </div>
+          <button class="ghost mini" id="libImport" title="Import files from disk">+</button>
+        </div>
+        <div class="pane-filters">
+          <input id="libSearch" type="search" placeholder="Filter…" />
+          <select id="libType">
+            <option value="">All</option>
+            <option value="image">Photo</option>
+            <option value="video">Reel</option>
+            <option value="carousel">Carousel</option>
+          </select>
+        </div>
+        <div class="lib-job hidden" id="libJob">
+          <div class="jhead"><span id="libJobTitle">Preparing…</span><span class="timer" id="libJobTimer">0:00</span></div>
+          <div id="libJobItems"></div>
+        </div>
+        <div class="lib-list" id="libList"></div>
+      </section>
+      <div class="sash v" data-sash="lib"></div>
+
+      <!-- properties -->
+      <section class="pane" id="edProps">
+        <div class="pane-head"><span class="pane-title">Properties</span></div>
+        <div class="pane-body" id="propsBody">
+          <div class="hint-box">Select a clip on the timeline to edit it.</div>
+        </div>
+      </section>
+      <div class="sash v" data-sash="props"></div>
+
+      <!-- preview -->
+      <section class="pane" id="edPreview">
+        <div class="pane-head">
+          <span class="pane-title">Preview</span>
+          <select id="projectSelect" title="Project"></select>
+          <button class="ghost mini" id="projectNew" title="New project">+</button>
+          <button class="ghost mini" id="projectRename" title="Rename project">✎</button>
+          <button class="primary mini" id="btnRender" title="Render the timeline to mp4">Render</button>
+        </div>
+        <div class="pv-stage" id="pvStage">
+          <canvas id="pvCanvas" width="1080" height="1920"></canvas>
+          <div class="pv-gone hidden" id="pvGone">
+            <b id="pvGoneName"></b>
+            <span>This file is no longer on disk.</span>
+            <button class="danger mini" id="pvGoneDrop">Remove the clip</button>
+          </div>
+        </div>
+        <div class="pv-bar">
+          <button class="ghost mini" id="pvPlay">▶</button>
+          <span class="pv-time" id="pvTime">0:00.0 / 0:00.0</span>
+          <span class="pv-spacer"></span>
+          <label class="pv-quality">Preview quality
+            <select id="pvQuality">
+              <option value="auto">Auto</option>
+              <option value="full">Full · 1080p</option>
+              <option value="high">High · 720p</option>
+              <option value="medium">Medium · 540p</option>
+              <option value="draft">Draft · 270p</option>
+            </select>
+          </label>
+          <span class="pv-meta" id="pvFps">– fps</span>
+          <span class="pv-meta" id="pvRes">1080×1920</span>
+        </div>
+        <div class="render-bar hidden" id="renderBar">
+          <span class="render-mark" id="renderMark"><span class="spinner"></span></span>
+          <span class="render-stage" id="renderStage">Rendering…</span>
+          <span class="timer" id="renderTimer">0:00</span>
+          <button class="ghost mini hidden" id="renderReveal">Show file</button>
+          <button class="ghost mini hidden" id="renderClose">✕</button>
+          <div class="qbar"><i id="renderProgress" style="width:0%"></i></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="sash h" data-sash="timeline"></div>
+
+    <div class="ed-timeline" id="edTimeline">
+      <div class="tl-toolbar">
+        <button class="ghost mini" id="tlAddVideo">+ Video track</button>
+        <button class="ghost mini" id="tlAddAudio">+ Audio track</button>
+        <button class="ghost mini" id="tlAddText">+ Text track</button>
+        <button class="ghost mini" id="tlAddTitle" title="Add a title at the playhead">+ Title</button>
+        <span class="tl-sep"></span>
+        <button class="ghost mini" id="tlSplit" title="Split at playhead (S)">Split</button>
+        <button class="ghost mini" id="tlSnap" title="Snap to edges">Snap</button>
+        <button class="ghost mini" id="tlUndo" title="Undo (Ctrl+Z)">↶</button>
+        <button class="ghost mini" id="tlRedo" title="Redo (Ctrl+Shift+Z)">↷</button>
+        <span class="pv-spacer"></span>
+        <button class="ghost mini" id="tlFit" title="Fit the project into view (\)">⤢ Fit</button>
+        <label class="pv-quality">Zoom
+          <input type="range" id="tlZoom" min="2" max="240" value="60" />
+        </label>
+        <span class="pv-meta" id="tlDuration">0:00</span>
+      </div>
+      <div class="tl-scroll" id="tlScroll">
+        <div class="tl-ruler" id="tlRuler"></div>
+        <div class="tl-zone" id="tlVideo"></div>
+        <div class="sash h inner" data-sash="audio"></div>
+        <div class="tl-zone audio" id="tlAudio"></div>
+        <div class="tl-zone text" id="tlText"></div>
+        <div class="playhead" id="playhead"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================ post viewer ============================ -->
+  <div class="modal hidden" id="modal">
+   <div class="modal-shell">
+    <button class="post-flip" id="postPrev" data-step="-1" title="Previous post">‹</button>
+    <div class="modal-card">
+      <button class="close" id="modalClose">✕</button>
+      <div class="viewer">
+        <div class="stage" id="stage"></div>
+        <div class="filmstrip" id="filmstrip"></div>
+      </div>
+      <aside class="details">
+        <div class="owner">
+          <strong id="mOwner"></strong>
+          <span id="mDate" class="muted"></span>
+          <a class="ghost mini" id="openIg" target="_blank" rel="noopener">Instagram ↗</a>
+        </div>
+        <div class="metrics" id="mMetrics"></div>
+        <div class="caption-block">
+          <div class="caption-head">
+            <span>Caption</span>
+            <button class="ghost mini" id="copyCaption">Copy</button>
+          </div>
+          <pre id="mCaption"></pre>
+        </div>
+        <div class="details-bottom">
+          <label class="field">
+            <span>Tags</span>
+            <input id="mTags" type="text" placeholder="refs, hook, editing" />
+          </label>
+          <label class="field">
+            <span>Note</span>
+            <textarea id="mNotes" rows="2" placeholder="Why is this saved?"></textarea>
+          </label>
+          <div class="actions">
+            <button class="primary mini" id="saveMeta">Save</button>
+            <button class="ghost mini" id="openFolder">Folder</button>
+            <button class="danger mini" id="deletePost">Delete</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+    <button class="post-flip" id="postNext" data-step="1" title="Next post">›</button>
+   </div>
+  </div>
+
+  <!-- a drawing, looked at properly -->
+  <div class="modal hidden" id="imgView">
+    <div class="img-card">
+      <div class="img-stage" id="imgStage">
+        <img id="imgViewPic" alt="" />
+      </div>
+      <div class="img-bar">
+        <button class="ghost mini" data-zoom="-1">−</button>
+        <span id="imgZoom">fit</span>
+        <button class="ghost mini" data-zoom="1">+</button>
+        <button class="ghost mini" data-zoom="0">Fit</button>
+        <span class="grow"></span>
+        <button class="ghost mini" id="imgClose">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- what finished while you were elsewhere -->
+  <div class="toasts" id="toasts"></div>
+
+  <!-- ============================ preferences ============================ -->
+  <div class="modal hidden" id="prefs">
+    <div class="prefs-card">
+      <div class="prefs-head">
+        <strong>Preferences</strong>
+        <button class="close static" id="prefsClose">✕</button>
+      </div>
+      <div class="prefs-body" id="prefsBody"></div>
+      <div class="actions">
+        <button class="primary mini" id="prefsSave">Save</button>
+        <button class="ghost mini" id="prefsCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================== scenario tool ========================== -->
+  <div class="modal hidden" id="scenTool">
+    <div class="scen-card">
+      <div class="scen-head">
+        <strong id="scenTitle">New scenario</strong>
+        <span class="scen-step" id="scenStep"></span>
+        <button class="danger mini hidden" id="scenDel">Delete</button>
+      </div>
+      <div class="scen-body" id="scenBody"></div>
+      <div class="scen-foot">
+        <div class="stamp-note" id="scenNote"></div>
+        <div class="actions" id="scenActions"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================ AI tool ============================ -->
+  <div class="modal hidden" id="aiTool">
+    <div class="ai-card">
+      <div class="ai-head">
+        <strong id="aiTitle">Face swap</strong>
+        <div class="ai-view" id="aiView">
+          <button class="var on" data-view="orig">Original</button>
+          <button class="var" data-view="ai" disabled>AI</button>
+        </div>
+        <span class="ai-cost" id="aiCost"></span>
+        <button class="close static" id="aiClose">✕</button>
+      </div>
+      <div class="ai-body" id="aiBody">
+        <div class="ai-col" id="aiParams"></div>
+        <div class="sash v" data-sash="ai_left"></div>
+        <div class="ai-mid">
+          <div class="ai-stage" id="aiStage">
+            <video id="aiVideo" playsinline preload="auto"></video>
+            <div class="ai-empty hidden" id="aiEmpty">Nothing generated yet</div>
+            <div class="ai-working hidden" id="aiProgress">
+              <span class="spinner"></span>
+              <span id="aiProgressText">Working…</span>
+              <div class="ai-progress"><i id="aiProgressBar"></i></div>
+            </div>
+          </div>
+          <div class="ai-track" id="aiTrack">
+            <i class="ai-span" id="aiSpan"></i>
+            <i class="ai-grip in" id="aiSpanIn" title="Where the generated piece starts"></i>
+            <i class="ai-grip out" id="aiSpanOut" title="Where it ends"></i>
+            <i class="ai-head-mark" id="aiMark"></i>
+          </div>
+          <div class="ai-transport">
+            <button class="ghost mini" id="aiPlay">▶</button>
+            <span class="ai-time" id="aiTime">0.0s</span>
+            <label class="check"><input type="checkbox" id="aiLoop" checked /> Loop</label>
+            <span class="ai-hint" id="aiHint"></span>
+          </div>
+        </div>
+        <div class="ai-right" id="aiRight">
+          <div class="ai-rooms" id="aiAssets"></div>
+          <div class="ai-bench" id="aiBench"></div>
+        </div>
+        <div class="ai-peek hidden" id="aiPeek"><img id="aiPeekImg" alt="" /><span id="aiPeekName"></span></div>
+      </div>
+      <div class="ai-foot">
+        <div class="stamp-note" id="aiNote"></div>
+        <div class="actions">
+          <button class="primary mini" id="aiRun">Generate</button>
+          <button class="ghost mini" id="aiCancel">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="importFile" accept="application/json" hidden />
+
+  <!-- Colour for the preview. CSS brightness() multiplies, ffmpeg's eq adds, so a
+       flash looked half as strong on screen as in the file. A linear transfer does
+       exactly what eq does: out = in * contrast + intercept. -->
+  <svg class="fx-defs" aria-hidden="true">
+    <defs>
+      <filter id="pvFx" color-interpolation-filters="sRGB">
+        <feComponentTransfer>
+          <feFuncR id="pvFuncR" type="linear" slope="1" intercept="0" />
+          <feFuncG id="pvFuncG" type="linear" slope="1" intercept="0" />
+          <feFuncB id="pvFuncB" type="linear" slope="1" intercept="0" />
+        </feComponentTransfer>
+        <feColorMatrix id="pvFxSat" type="saturate" values="1" />
+      </filter>
+    </defs>
+  </svg>
+
+  <script src="store.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+.venv/
+media/
+assets/
+renders/
+data/
+.env
+__pycache__/
+*.pyc
